@@ -107,7 +107,9 @@ window.onload = () =>{
         const toString = Object.prototype.toString
         console.log(Array.isArray(received));
         const extensions = Array.from(document.getElementsByClassName("ext")).map(v=>{
-            return {v.id:v.checked};
+            const obj = {};
+            obj[v.id] = v.checked;
+            return obj;
         });
         console.log(extensions);
         const obj = {
