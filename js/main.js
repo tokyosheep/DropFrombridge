@@ -4,6 +4,8 @@ window.onload = () =>{
     themeManager.init();
     const setList = document.getElementById("setList");
     const childList = document.getElementById("childList");
+    const sentMs = document.getElementById("sentMs");
+    const extensionId = csInterface.getExtensionID(); 
     
     const filePath = csInterface.getSystemPath(SystemPath.EXTENSION) +`/js/`;
     const extensionRoot = csInterface.getSystemPath(SystemPath.EXTENSION) +`/jsx/`;
@@ -104,19 +106,44 @@ window.onload = () =>{
     }
     
     function PhotoshopProcess(received){
-        const toString = Object.prototype.toString
-        console.log(Array.isArray(received));
-        const extensions = Array.from(document.getElementsByClassName("ext")).map(v=>{
-            const obj = {};
-            obj[v.id] = v.checked;
-            return obj;
+        const flag = Array.from(document.getElementsByClassName("ext")).some(v=> v.checked);
+        const ext = Array.from(document.getElementsByClassName("ext"));
+        const saveType = {};
+        ext.forEach(v=>{ 
+            saveType[v.id] = v.checked;
         });
-        console.log(extensions);
+        console.log(saveType);
         const obj = {
             action:[setList[setList.selectedIndex].value,childList[childList.selectedIndex].value],
-            files:(received)
+            files:received,
+            flag:flag,
+            ext:saveType
         }
         console.log(obj);
         csInterface.evalScript(`process(${JSON.stringify(obj)})`);
     }
+    console.log(VulcanInterface.isAppRunning(`bridge`)); // false
+    
+    class VulcanEvent{
+        constructor(btn,message){
+            this.btn = btn;
+            this.message = message;
+            this.btn.addEventListener("click",this);
+        }
+        
+        handleEvent(){
+            
+            /*
+            const customMessage = new VulcanMessage("vulcan.SuiteMessage.setMessage");
+            customMessage.setPayload(`GlobalStrageTest,${this.message}`);
+            VulcanInterface.dispatchMessage(customMessage);
+            */
+            const vulcanNamespace = VulcanMessage.TYPE_PREFIX + extensionId;
+            const msg = new VulcanMessage(vulcanNamespace);
+            msg.setPayload(JSON.stringify(this.message));
+            VulcanInterface.dispatchMessage(msg);
+        }
+    }
+    
+    const push = new VulcanEvent(sentMs,{name:"yagi",age:22});
 }
