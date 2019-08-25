@@ -14,8 +14,87 @@ window.onload = () =>{
     const http = require("http");
     const url = require("url");
     
+    const brdgeId = "DropAndConnect";
     const GetAction = "GetAction.jsx";
     
+    
+    class ConnectAPP{
+        constructor(sender){
+            this.sender = sender;
+            //this.msg;
+        }
+        /*
+        sendMsg(){
+            const vulcanNamespace = VulcanMessage.TYPE_PREFIX + extensionId;
+            const msg = new VulcanMessage(vulcanNamespace);
+            msg.setPayload(JSON.stringify(this.msg));
+            VulcanInterface.dispatchMessage(msg);
+        }
+        */
+    }
+    
+    class Listening extends ConnectAPP{
+        constructor(sender){
+            super(sender);
+            const vulcanNamespace = VulcanMessage.TYPE_PREFIX + this.sender;
+            VulcanInterface.addMessageListener(vulcanNamespace,this.recive);
+        }
+        
+        async recieve(){}
+    }
+    
+    /*bridgeから　データを受け取った時のイベント*/
+    class Exportfiles extends Listening{
+        constructor(sender){
+            super(sender);
+        }
+        
+        async recive(message){
+            console.log(message);
+            this.msg = await messageHandler(message).catch(err => console.log(err));
+            console.log(this.msg);
+            //const illustratorRun = new IllustratorProcess(msg);
+            if(this.msg.app != "photoshop") return false;
+            const ps= new PhotoshopProcess(this.msg);
+            ps.jsxProcess();
+            
+            function messageHandler(message){
+                return new Promise(resolve=>{
+                    const payload = VulcanInterface.getPayload(message);
+                    const object = JSON.parse(payload);
+                    resolve(object);
+                });    
+            }
+            
+        }
+    }
+    
+    const getMsg = new Exportfiles(brdgeId);
+    
+    class PhotoshopProcess{
+        constructor(msg){
+            this.msg = msg;
+        }
+        
+        jsxProcess(){
+            const flag = Array.from(document.getElementsByClassName("ext")).some(v=> v.checked);
+            const ext = Array.from(document.getElementsByClassName("ext"));
+            const saveType = {};
+            ext.forEach(v=>{ 
+               saveType[v.id] = v.checked;
+            });
+            console.log(saveType);
+            const obj = {
+                action:[setList[setList.selectedIndex].value,childList[childList.selectedIndex].value],
+                files:this.msg.fileList,
+                flag:flag,
+                ext:saveType
+            }
+            console.log(obj);
+            csInterface.evalScript(`process(${JSON.stringify(obj)})`);
+        }
+    }
+    /*
     const server = http.createServer((req,res)=>{
         const url_parts = url.parse(req.url);
         switch(url_parts.pathname){
@@ -49,6 +128,7 @@ window.onload = () =>{
             });
         });    
     }
+    */
     
     class LoadingActions{
         constructor(){
@@ -105,23 +185,6 @@ window.onload = () =>{
         }
     }
     
-    function PhotoshopProcess(received){
-        const flag = Array.from(document.getElementsByClassName("ext")).some(v=> v.checked);
-        const ext = Array.from(document.getElementsByClassName("ext"));
-        const saveType = {};
-        ext.forEach(v=>{ 
-            saveType[v.id] = v.checked;
-        });
-        console.log(saveType);
-        const obj = {
-            action:[setList[setList.selectedIndex].value,childList[childList.selectedIndex].value],
-            files:received,
-            flag:flag,
-            ext:saveType
-        }
-        console.log(obj);
-        csInterface.evalScript(`process(${JSON.stringify(obj)})`);
-    }
     console.log(VulcanInterface.isAppRunning(`bridge`)); // false
     
     class VulcanEvent{
@@ -132,12 +195,6 @@ window.onload = () =>{
         }
         
         handleEvent(){
-            
-            /*
-            const customMessage = new VulcanMessage("vulcan.SuiteMessage.setMessage");
-            customMessage.setPayload(`GlobalStrageTest,${this.message}`);
-            VulcanInterface.dispatchMessage(customMessage);
-            */
             const vulcanNamespace = VulcanMessage.TYPE_PREFIX + extensionId;
             const msg = new VulcanMessage(vulcanNamespace);
             msg.setPayload(JSON.stringify(this.message));
